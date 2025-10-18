@@ -11,6 +11,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains.summarize import load_summarize_chain
 from langchain_core.documents import Document
 import os
+import whisper
 from typing import List, Dict
 from dotenv import load_dotenv
 load_dotenv()
@@ -30,3 +31,20 @@ class EmbeddingModel:
         else:
             raise ValueError(f"Unsupported embedding type: {model_type}")
         
+class LLMModel:
+    """Handles different LLM Models"""
+    def __init__(self, model_type="gemini", model_name="models/gemini-2.0-flash"):
+        self.model_type = model_type
+        self.model_name = model_name
+        if model_type == "ollama":
+            from langchain_community.chat_models import ChatOllama
+            self.llm = ChatOllama(model=model_name, temperature=0)
+        elif model_type == "gemini":
+            # Gemini via LangChain Google Generative API
+            self.llm = ChatGoogleGenerativeAI(
+                model=self.model_name,
+                api_key=os.getenv("GOOGLE_API_KEY"),  # must set this in .env
+                temperature=0
+            )
+        else:
+            raise ValueError(f"Unsupported LLM type: {model_type}")
