@@ -74,3 +74,13 @@ class YoutubeVideoSummarizer:
         st.info("🎙️ Transcribing audio...")
         result = self.whisper_model.transcribe(audio_path, fp16=False)
         return result["text"]
+    
+    def create_documents(self, text: str, video_title: str) -> List[Document]:
+        st.info("📄 Creating document chunks...")
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+        texts = text_splitter.split_text(text)
+        return [Document(page_content=chunk, metadata={"source": video_title}) for chunk in texts]
+
+    def create_vector_store(self, documents: List[Document]) -> Chroma:
+        st.info(f"💾 Creating vector store using {self.embedding_model.model_type} embeddings...")
+        return Chroma.from_documents(documents=documents, embedding=self.embedding_model.embeddingfn)    
