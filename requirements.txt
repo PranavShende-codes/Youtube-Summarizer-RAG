@@ -1,0 +1,16 @@
+streamlit
+yt-dlp
+langchain
+langchain-community
+langchain-core
+langchain-text-splitters
+langchain-openai
+langchain-google-genai
+google-generativeai
+openai-whisper
+chromadb
+python-dotenv
+tiktoken
+pypdf
+PyPDF2
+requests
