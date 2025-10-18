@@ -48,3 +48,29 @@ class LLMModel:
             )
         else:
             raise ValueError(f"Unsupported LLM type: {model_type}")
+
+class YoutubeVideoSummarizer:
+    def __init__(self, llm_type="gemini", llm_model_name="models/gemini-2.0-flash", embedding_type="nomic-embed-text"):
+        self.embedding_model = EmbeddingModel(embedding_type)
+        self.llm_model = LLMModel(llm_type, llm_model_name)
+        self.whisper_model = whisper.load_model("base")
+
+    def download_video(self, url: str) -> tuple[str, str]:
+        st.info("🔽 Downloading video...")
+        ydl_opts = {
+            "format": "bestaudio/best",
+            "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}],
+            "outtmpl": "downloads/%(title)s.%(ext)s",
+            "noplaylist": True
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            sanitized_title = info['title'].replace('/', '_').replace('\\', '_')
+            base_filename = ydl.prepare_filename(info).rsplit('.', 1)[0]
+            audio_path = f"{base_filename}.mp3"
+            return audio_path, sanitized_title
+
+    def transcribe_audio(self, audio_path: str) -> str:
+        st.info("🎙️ Transcribing audio...")
+        result = self.whisper_model.transcribe(audio_path, fp16=False)
+        return result["text"]
