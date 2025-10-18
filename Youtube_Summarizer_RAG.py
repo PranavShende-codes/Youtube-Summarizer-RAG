@@ -166,3 +166,19 @@ try:
 except Exception as e:
     st.sidebar.error(f"Error loading models: {e}")
     st.stop()
+
+# Main app interface
+url = st.text_input("Enter the YouTube Video URL:", placeholder="https://www.youtube.com/watch?v=...")
+
+if st.button("Process Video", use_container_width=True):
+    if url:
+        with st.spinner("Processing video... This may take a few minutes depending on the length."):
+            result = summarizer.process_video(url)
+            if result:
+                st.session_state.result = result
+                # Clear previous chat history when a new video is processed
+                st.session_state.messages = []
+            else:
+                st.error("Failed to process the video. Please check the URL and try again.")
+    else:
+        st.warning("Please enter a YouTube URL.")
