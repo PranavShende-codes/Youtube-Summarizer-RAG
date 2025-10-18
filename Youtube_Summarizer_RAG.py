@@ -130,3 +130,39 @@ class YoutubeVideoSummarizer:
             st.error(f"An error occurred: {e}")
             return None
 
+
+# --- STREAMLIT UI ---
+
+st.set_page_config(page_title="YouTube Video Summarizer & Q&A", layout="wide")
+st.title("▶️ YouTube Video Summarizer & Q&A")
+
+# Caching the summarizer object for performance
+@st.cache_resource
+def load_summarizer(llm_type, llm_model_name, embedding_type):
+    return YoutubeVideoSummarizer(llm_type, llm_model_name, embedding_type)
+
+# Sidebar for configuration
+with st.sidebar:
+    st.header("⚙️ Configuration")
+    llm_choice = st.selectbox("Choose LLM Model", ["Gemini (Google)", "Ollama (Llama3)"])
+    embedding_choice = st.selectbox("Choose Embedding Model", ["Chroma Default (fast, local)", "Nomic (Ollama)"])
+
+    # Map friendly names to class parameters
+    llm_map = _map = {
+    "Gemini (Google)": ("gemini", "models/gemini-2.0-flash"), "Ollama (Llama3)": ("ollama", "llama3.2:3b")}
+    embedding_map = {"Gemini": "gemini", "Chroma Default (fast, local)": "chroma_default", "Nomic (Ollama)": "nomic"}
+
+    llm_type, llm_model_name = llm_map[llm_choice]
+    embedding_type = embedding_map[embedding_choice]
+
+    if llm_type == "gemini" and not os.getenv("GOOGLE_API_KEY"):
+        st.error("Gemini API key is missing. Please set it in your .env file.")
+        st.stop()
+
+# Initialize the summarizer using the cached function
+try:
+    summarizer = load_summarizer(llm_type, llm_model_name, embedding_type)
+    st.sidebar.success("Models loaded successfully!")
+except Exception as e:
+    st.sidebar.error(f"Error loading models: {e}")
+    st.stop()
