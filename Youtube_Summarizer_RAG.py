@@ -83,4 +83,25 @@ class YoutubeVideoSummarizer:
 
     def create_vector_store(self, documents: List[Document]) -> Chroma:
         st.info(f"💾 Creating vector store using {self.embedding_model.model_type} embeddings...")
-        return Chroma.from_documents(documents=documents, embedding=self.embedding_model.embeddingfn)    
+        return Chroma.from_documents(documents=documents, embedding=self.embedding_model.embeddingfn)
+
+    def generate_summary(self, documents: List[Document]) -> str:
+        st.info("✍️ Generating summary...")
+        map_prompt = ChatPromptTemplate.from_template(
+            'Write a concise summary of the following section:\n"{text}"\nCONCISE SUMMARY:'
+        )
+        combine_prompt = ChatPromptTemplate.from_template(
+            'Write a detailed summary of the video transcript sections:\n"{text}"\n'
+            'Include:\n- Main topics and key points\n- Important details and examples\n'
+            'DETAILED SUMMARY:'
+        )
+        summary_chain = load_summarize_chain(
+            llm=self.llm_model.llm,
+            chain_type="map_reduce",
+            map_prompt=map_prompt,
+            combine_prompt=combine_prompt,
+            verbose=False,
+        )
+        # The output of the chain is a dictionary, we need to access the 'output_text' key
+        result = summary_chain.invoke(documents)
+        return result.get("output_text", "Sorry, could not generate a summary.")    
