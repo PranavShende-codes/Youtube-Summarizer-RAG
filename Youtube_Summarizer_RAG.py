@@ -105,3 +105,28 @@ class YoutubeVideoSummarizer:
         # The output of the chain is a dictionary, we need to access the 'output_text' key
         result = summary_chain.invoke(documents)
         return result.get("output_text", "Sorry, could not generate a summary.")    
+    
+    def setup_qa_chain(self, vector_store: Chroma):
+        memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+        return ConversationalRetrievalChain.from_llm(
+            llm=self.llm_model.llm,
+            retriever=vector_store.as_retriever(),
+            memory=memory,
+            verbose=False,
+        )
+
+    def process_video(self, url: str) -> Dict:
+        os.makedirs("downloads", exist_ok=True)
+        try:
+            audio_path, video_title = self.download_video(url)
+            transcript = self.transcribe_audio(audio_path)
+            documents = self.create_documents(transcript, video_title)
+            summary = self.generate_summary(documents)
+            vector_store = self.create_vector_store(documents)
+            qa_chain = self.setup_qa_chain(vector_store)
+            os.remove(audio_path)
+            return {"summary": summary, "qa_chain": qa_chain, "title": video_title, "full_transcript": transcript}
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+            return None
+
