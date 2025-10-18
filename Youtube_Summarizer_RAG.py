@@ -182,3 +182,44 @@ if st.button("Process Video", use_container_width=True):
                 st.error("Failed to process the video. Please check the URL and try again.")
     else:
         st.warning("Please enter a YouTube URL.")
+
+# Display results and chat if processing is complete
+if 'result' in st.session_state:
+    result = st.session_state.result
+    st.header(f"Title: {result['title']}")
+
+    with st.expander("📝 View Summary", expanded=True):
+        st.write(result['summary'])
+
+    with st.expander("📄 View Full Transcript"):
+        st.text_area("", result['full_transcript'], height=250)
+
+    st.header("💬 Ask Questions about the Video")
+
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Display chat messages from history on app rerun
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Accept user input
+    if prompt := st.chat_input("What is this video about?"):
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        # Display user message in chat message container
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # Generate and display assistant response
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                qa_chain = result["qa_chain"]
+                chat_history = [(msg["content"]) for msg in st.session_state.messages if msg["role"] == "user"]
+                response = qa_chain.invoke({"question": prompt, "chat_history": chat_history})
+                st.markdown(response["answer"])
+        
+        # Add assistant response to chat history
+        st.session_state.messages.append({"role": "assistant", "content": response["answer"]})
